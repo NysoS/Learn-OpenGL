@@ -8,21 +8,20 @@
 #include "VAO.h"
 #include "EBO.h"
 
+#include "Texture.h"
+
 GLfloat vertices[] =
-{//		COORDINATES                          /       COLOR //
-	-0.5f, -0.5f * float(sqrt(3)) / 3, 0.0f,	0.8f, 0.3f, 0.02f,//left corner
-	0.5f, -0.5f * float(sqrt(3)) / 3, 0.0f,		0.8f, 0.3f, 0.02f,//right corner
-	0.0f, 0.5f * float(sqrt(3)) * 2 / 3, 0.0f,	1.0f, 0.6f, 0.32f,//up corner
-	-0.5f / 2, 0.5f * float(sqrt(3)) / 6, 0.0f, 0.9f, 0.45f, 0.17f,//
-	0.5f / 2, 0.5f * float(sqrt(3)) / 6, 0.0f,	0.9f, 0.45f, 0.17f,// 
-	0.0f, -0.5f * float(sqrt(3)) / 3, 0.0f,		0.8f, 0.3f, 0.02f,//
+{//				COORDINATES         /		COLOR		  //
+	-0.5f,		-0.5f,		0.0f,		1.f,	0.0f,	0.0f,	0.0f, 0.0f,//lower left corner
+	-0.5f,		0.5f,		0.0f,		0.0f,	1.0f,	0.0f,	0.0f, 1.0f,//upper left corner
+	0.5f,		0.5f,		0.0f,		0.0f,	0.0f,	1.0f,	1.0f, 1.0f,//upper right corner
+	0.5f,		-0.5f,		0.0f,		1.0f,	1.0f,	1.0f,	1.0f, 0.0f//lower right corner
 };
 
 GLuint indices[] =
 {
-	0, 3, 5,
-	3, 2, 4,
-	5, 4, 1
+	0, 2, 1, //Upper triangle
+	0, 3, 2  //Lower triangle
 };
 
 int main() 
@@ -32,8 +31,6 @@ int main()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-	
 
 	GLFWwindow* window = glfwCreateWindow(800, 800, "Open gl window", NULL, NULL);
 	if (window == NULL) {
@@ -50,20 +47,24 @@ int main()
 
 	Shader shaderProgram("default.vert", "default.frag");
 	
-
 	VAO vao;
 	vao.Bind();
 
 	VBO vbo(vertices, sizeof(vertices));
 	EBO ebo(indices, sizeof(indices));
 
-	vao.LinkAttrib(vbo, 0, 3, GL_FLOAT, 6 * sizeof(float), (void*)0);
-	vao.LinkAttrib(vbo, 1, 3, GL_FLOAT, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	vao.LinkAttrib(vbo, 0, 3, GL_FLOAT, 8 * sizeof(float), (void*)0);
+	vao.LinkAttrib(vbo, 1, 3, GL_FLOAT, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+	vao.LinkAttrib(vbo, 2, 2, GL_FLOAT, 8 * sizeof(float), (void*)(6 * sizeof(float)));
 	vao.Unbind();
 	vbo.UnBind();
 	ebo.UnBind();
 
 	GLuint unitID = glGetUniformLocation(shaderProgram.ID, "scale");
+
+	//Texture
+	Texture cat("oui.png", GL_TEXTURE_2D, GL_TEXTURE0, GL_RGBA, GL_UNSIGNED_BYTE);
+	cat.texUnit(shaderProgram, "tex0", 0);
 
 	while (!glfwWindowShouldClose(window)) 
 	{
@@ -73,8 +74,9 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT);
 		shaderProgram.Activate();
 		glUniform1f(unitID, 0.5f);
+		cat.Bind();
 		vao.Bind();
-		glDrawElements(GL_TRIANGLES, 9, GL_UNSIGNED_INT, 0);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 		//Swap the back buffer with the front buffer
 		glfwSwapBuffers(window);
 
@@ -84,6 +86,7 @@ int main()
 	vao.Delete();
 	vbo.Delete();
 	ebo.Delete();
+	cat.Delete();
 	shaderProgram.Delete();
 
 	glfwDestroyWindow(window);
